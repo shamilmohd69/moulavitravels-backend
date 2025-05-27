@@ -10,7 +10,7 @@ db();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Default route
+// Default route    
 router.get('/', (req, res) => {
   res.send('Admin Home Page');
 });
@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user._id, username: user.username },
       JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "12h" }
     );
 
     console.log("✅ Login successful for:", username);
@@ -51,6 +51,24 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
+
+router.post('/verify-token', (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token missing or malformed' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return res.status(200).json({ message: 'Token valid', user: decoded });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
 
 module.exports = router;
  
