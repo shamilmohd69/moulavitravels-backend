@@ -7,6 +7,9 @@ const Login = require('../models/login');
 const Hero = require('../models/hero');
 const BusService = require('../models/bus-servicess');
 const BusTiming = require('../models/bus-timing');
+const BusPosters = require('../models/bus-posters');
+const cloudinary = require('../config/cloudinary');
+const upload = require('../middleware/multer');
 
 dotenv.config();
 db();
@@ -281,6 +284,44 @@ router.delete('/bus-timing/:id', async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
+
+// Upload bus poster image
+router.post('/bus-posters', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded, you dumbass.' });
+    }
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'bus_posters',
+    });
+
+    // Save poster info in DB
+    const newPoster = new BusPosters({
+      image: result.secure_url,  // the Cloudinary URL
+      desc: req.body.desc || '',
+    });
+
+    await newPoster.save();
+
+    return res.status(201).json({ message: 'Image uploaded, you sexy fuck!', poster: newPoster });
+  } catch (err) {
+    console.error('❌ Upload failed:', err);
+    return res.status(500).json({ error: 'Upload fucked up, try again!' });
+  }
+}); 
+
+router.get('/bus-posters', async (req, res) => {
+  try {
+    const posters = await BusPosters.find();
+    return res.status(200).json(posters);
+  } catch (err) {
+    console.error('❌ Error fetching posters:', err);
+    return res.status(500).json({ error: 'Failed to get images!' });
+  }
+});
+
 
 
 module.exports = router;
