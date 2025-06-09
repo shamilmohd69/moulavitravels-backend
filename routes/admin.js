@@ -344,7 +344,50 @@ router.delete('/bus-posters/:id', async (req, res) => {
   }
 });
 
+const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token missing or invalid' });
+  }
 
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+router.put('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Both current and new password required' });
+    }
+
+    const user = await Login.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.password !== currentPassword) {
+      return res.status(403).json({ error: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('❌ Error changing password:', err.message);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;
