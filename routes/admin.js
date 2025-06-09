@@ -297,10 +297,10 @@ router.post('/bus-posters', upload.single('image'), async (req, res) => {
       folder: 'bus_posters',
     });
 
-    // Save poster info in DB
     const newPoster = new BusPosters({
-      image: result.secure_url,  // the Cloudinary URL
+      image: result.secure_url,
       desc: req.body.desc || '',
+      public_id: result.public_id, // <-- Store this!
     });
 
     await newPoster.save();
@@ -310,7 +310,7 @@ router.post('/bus-posters', upload.single('image'), async (req, res) => {
     console.error('❌ Upload failed:', err);
     return res.status(500).json({ error: 'Upload fucked up, try again!' });
   }
-}); 
+});
 
 router.get('/bus-posters', async (req, res) => {
   try {
@@ -322,7 +322,29 @@ router.get('/bus-posters', async (req, res) => {
   }
 });
 
+router.delete('/bus-posters/:id', async (req, res) => {
+  try {
+    const poster = await BusPosters.findById(req.params.id);
+    if (!poster) {
+      return res.status(404).json({ error: 'Poster not found' });
+    }
+
+    // Delete from Cloudinary
+    if (poster.public_id) {
+      await cloudinary.uploader.destroy(poster.public_id);
+    }
+
+    // Delete from DB
+    await BusPosters.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ message: 'Poster and Cloudinary image deleted' });
+  } catch (err) {
+    console.error('❌ Deletion failed:', err);
+    res.status(500).json({ error: 'Failed to delete poster' });
+  }
+});
+
+
 
 
 module.exports = router;
- 
