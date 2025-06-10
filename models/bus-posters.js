@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const busposter = new mongoose.Schema({
     image: String,
+    heading: String,
     desc: String,
     public_id: String,
 });

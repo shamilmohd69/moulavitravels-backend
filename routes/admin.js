@@ -299,6 +299,7 @@ router.post('/bus-posters', upload.single('image'), async (req, res) => {
 
     const newPoster = new BusPosters({
       image: result.secure_url,
+      heading: req.body.heading || '',
       desc: req.body.desc || '',
       public_id: result.public_id, // <-- Store this!
     });
